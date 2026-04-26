@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+url = "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv"
+df = pd.read_csv(url)
+
+df = df.copy()
+df.dropna(inplace=True)
+
+df.rename(columns={
+    'state': 'State',
+    'cases': 'Severity',
+    'date': 'Start_Time'
+}, inplace=True)
+
+df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+df['Hour'] = df['Start_Time'].dt.day % 24
+
+df['Weather_Condition'] = np.random.choice(['Clear','Rain','Fog','Snow'], len(df))
+
+print("DATASET SHAPE:", df.shape)
+print("\nFIRST 5 ROWS:\n", df.head())
+
+X = df[['Hour']]
+y = df['Severity'] % 4
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+model = DecisionTreeClassifier(max_depth=5)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("\nACCURACY:", round(accuracy_score(y_test, y_pred),2))
+print("\nCONFUSION MATRIX:\n", confusion_matrix(y_test, y_pred))
+
+plt.figure()
+df['Hour'].value_counts().sort_index().plot(kind='bar')
+plt.title("Accidents by Hour")
+plt.xlabel("Hour")
+plt.ylabel("Count")
+plt.show()
+
+plt.figure()
+df['Weather_Condition'].value_counts().plot(kind='bar')
+plt.title("Weather Conditions")
+plt.xlabel("Weather")
+plt.ylabel("Count")
+plt.show()
+
+plt.figure()
+df['State'].value_counts().head(10).plot(kind='bar')
+plt.title("Top 10 States by Accidents")
+plt.xlabel("State")
+plt.ylabel("Count")
+plt.xticks(rotation=45)
+plt.show()
+
+plt.figure()
+sns.countplot(x=y)
+plt.title("Severity Distribution")
+plt.xlabel("Severity Level")
+plt.ylabel("Count")
+plt.show()
+
+plt.figure(figsize=(8,5))
+sns.heatmap(pd.DataFrame(confusion_matrix(y_test, y_pred)), annot=True, fmt='d')
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
